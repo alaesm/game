@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 
 // Create socket instance with error handling
 
-const API_URL = 'https://tictactoe-api-online.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export const socket = io(API_URL, {
   transports: ['websocket'],
   reconnection: true,

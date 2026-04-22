@@ -40,6 +40,10 @@ def minimax2():
     action = ttt.minimax2(board, 'O',player_o)
     return jsonify({"action": action})
 
+@app.route("/api/players", methods=["GET"])
+def get_players():
+    return jsonify({"players": ttt.get_available_players()})
+
 PLAYERS_FILE = "../src/data/players.json"
 @app.route("/api/updatePlayers", methods=["POST"])
 #@cross_origin()  # Autorise les requêtes cross-origin sur cette route

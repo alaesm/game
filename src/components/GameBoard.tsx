@@ -4,6 +4,30 @@ import playersData from '../data/players.json'; // Importation du JSON
 import { PlayerPanel } from './PlayerPanel';
 import { MatchPanel } from './MatchPanel';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+type PlayerStats = {
+  id: string;
+  name: string;
+  points: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  totalTime: number;
+  totalErrors: number;
+};
+
+const makeDefaultPlayer = (name: string, index: number): PlayerStats => ({
+  id: String(index + 1),
+  name,
+  points: 0,
+  wins: 0,
+  draws: 0,
+  losses: 0,
+  totalTime: 0,
+  totalErrors: 0,
+});
+
 
 const GameBoard = () => {
   const {
@@ -21,13 +45,51 @@ const GameBoard = () => {
     player2errorCount,
   } = useGameStore();
 
-  const [player1, setPlayer1] = useState(playersData[0].name);
-  const [player2, setPlayer2] = useState(playersData[1].name);
+  const initialPlayer1 = playersData[0]?.name || 'Alaeddine';
+  const initialPlayer2 = playersData[1]?.name || initialPlayer1;
+  const [player1, setPlayer1] = useState(initialPlayer1);
+  const [player2, setPlayer2] = useState(initialPlayer2);
+  const [availablePlayers, setAvailablePlayers] = useState<string[]>(
+    playersData.map((p) => p.name)
+  );
 
   /* **************************************** */
-  const [players, setPlayers] = useState(playersData);
+  const [players, setPlayers] = useState<PlayerStats[]>(playersData as PlayerStats[]);
   const [statsUpdated, setStatsUpdated] = useState(false);
   const [matchesUpdated, setMatchesUpdated] = useState(false);
+
+  useEffect(() => {
+    const loadPlayersFromApi = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/players`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const apiPlayers = Array.isArray(data.players)
+          ? data.players.filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
+          : [];
+
+        if (apiPlayers.length === 0) return;
+
+        setAvailablePlayers(apiPlayers);
+        setPlayer1(apiPlayers[0]);
+        setPlayer2(apiPlayers[1] ?? apiPlayers[0]);
+
+        setPlayers((prev) =>
+          apiPlayers.map((name, index) => {
+            const existing = prev.find((p) => p.name === name);
+            return existing ?? makeDefaultPlayer(name, index);
+          })
+        );
+      } catch (error) {
+        console.error('Erreur lors du chargement des joueurs API:', error);
+      }
+    };
+
+    loadPlayersFromApi();
+  }, []);
 
   const updatePlayerStats = async () => {
     if (!gameOver || statsUpdated) return;
@@ -72,7 +134,7 @@ const GameBoard = () => {
 
     setPlayers(updatedPlayers);
     try {
-      await fetch('http://localhost:5000/api/updatePlayers', {
+      await fetch(`${API_BASE_URL}/api/updatePlayers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedPlayers),
@@ -108,7 +170,7 @@ const GameBoard = () => {
     };
 
     try {
-      await fetch('http://localhost:5000/api/updateMatches', {
+      await fetch(`${API_BASE_URL}/api/updateMatches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(match), // ✅ Envoi du bon objet
@@ -141,6 +203,7 @@ const GameBoard = () => {
             player="X"
             winner={winner}
             currentPlayer={currentPlayer}
+            players={availablePlayers}
             totalTime={player1TotalTime}
             errorCount={player1errorCount}
             moves={player1Moves}
@@ -199,6 +262,7 @@ const GameBoard = () => {
             player="O"
             winner={winner}
             currentPlayer={currentPlayer}
+            players={availablePlayers}
             totalTime={player2TotalTime}
             errorCount={player2errorCount}
             moves={player2Moves}

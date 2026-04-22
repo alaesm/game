@@ -1,11 +1,11 @@
 import { Brain } from 'lucide-react';
 import { Fireworks } from './Animation';
-import playersData from '../data/players.json'; // Importation du JSON
 
 interface PlayerPanelProps {
     player: 'X' | 'O';
     winner: 'X' | 'O' | 'Draw' | null;
     currentPlayer: 'X' | 'O';
+    players: string[];
     totalTime: number;
     errorCount: number;
     moves: number[];
@@ -18,6 +18,7 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({
     player,
     winner,
     currentPlayer,
+    players,
     totalTime,
     errorCount,
     moves,
@@ -40,9 +41,9 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({
                     value={selectedPlayer}
                     onChange={(e) => setSelectedPlayer(e.target.value)}
                 >
-                    {playersData.map((p) => (
-                        <option key={p.id} value={p.name}>
-                            {p.name}
+                    {players.map((name) => (
+                        <option key={name} value={name}>
+                            {name}
                         </option>
                     ))}
                 </select>
